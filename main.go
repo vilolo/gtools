@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"strings"
+	"strconv"
 
 	"github.com/henrylee2cn/mahonia"
 
@@ -31,6 +33,8 @@ const (
 	START_DATE = "20210101"
 )
 
+var pool []structs.QtInfo
+
 func init() {
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s", USERNAME, PASSWORD, NETWORK, SERVER, PORT, DATABASE)
 	DB, err := sql.Open("mysql", dsn)
@@ -51,11 +55,166 @@ func main() {
 	// saveList()
 
 	// 获取历史
-	updateHistory()
+	// updateHistory()
 
 	// 策略
-	// 历史验证策略的胜率
-	// 展示图片
+	strategy()
+
+	// 处理结果
+	handlePool()
+
+}
+
+func handlePool(){
+	if pool != nil {
+		jsonStr,_ := json.Marshal(pool)
+		// utils.WriteFile("./data/"+time.Now().Format("20060102")+".js","data="+string(jsonStr))
+
+		html := fmt.Sprintf(`<html>
+		<head>
+			<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		</head>
+		<div class="info"></div>
+		<div class="box">
+		</div>
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+	<script>
+		var html = ""
+		data = %s
+		$(".info").html(data.length)
+		data.forEach((element,i) => {
+			html += "<span><span>"+(i+1)+"//"+element.f12+"//"+element.f14+"//"+element.f100+"</span><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
+		});
+		$(".box").html(html)
+	</script>
+	</html>`,jsonStr)
+	utils.WriteFile("./data/"+time.Now().Format("20060102")+".html",html)
+	}else{
+		fmt.Println("结果为空")
+	}
+}
+
+func strategy(){
+	rows, err := dbClient.Query("select code,name,data,sector from st")
+	if err != nil {
+		fmt.Println("err1:",err)
+		return
+	}
+	defer func ()  {
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+	st := new(structs.DbSt)
+	up := 0
+	down := 0
+	for rows.Next() {
+		err = rows.Scan(&st.Code,&st.Name,&st.Data,&st.Sector)
+		if err != nil {
+			fmt.Println("err2:", err)
+			return
+		}
+		// fmt.Println((*&st.Data))
+		jsonStr := (*&st.Data)[22 : len(*&st.Data)-3]
+		// fmt.Println(jsonStr)
+		var stData structs.StData
+		json.Unmarshal([]byte(jsonStr), &stData)
+
+		if len(stData.Hq) > 10 {
+			var kArr [10]structs.K
+			for i := 0; i < 10; i++ {
+				k := new(structs.K)
+				createK(stData.Hq[i],k)
+				kArr[i] = *k
+			}
+			// fmt.Println(kArr)
+
+			//== 验证策略 ==
+			// res := check1(kArr[:],6)
+			res := check2(kArr[:],1)
+			if res==1 {
+				up++
+			}else if res==2 {
+				down++
+			}
+
+			//== 保存结果 ==
+			toPool(kArr[:],*&st.Code,*&st.Name,*&st.Sector)
+		}
+	}
+	fmt.Println(up, "==", down)
+	// fmt.Println(*st)
+}
+
+func p1(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
+	kArr[i].Close > (kArr[i].High + kArr[i].Low)/2 &&
+	kArr[i].High > kArr[i+1].High &&
+	kArr[i+1].High > kArr[i+2].High &&
+	kArr[i].Low > kArr[i+1].Low && 
+	kArr[i+1].Low > kArr[i+2].Low{
+		return true
+	}
+	return false
+}
+
+func toPool(kArr []structs.K, code string, name string, sector string)  {
+	if p1(kArr, 0) {
+		pool = append(pool, structs.QtInfo{code,name,sector})
+	}
+}
+
+func check2(kArr []structs.K, i int) int {
+	res := 0
+	if i<=0 {
+		fmt.Println("验证i要大于0")
+		return res
+	}
+	if p1(kArr,i) {
+		i--
+		for j:=i; j >= 0; j-- {
+			if kArr[j].High > kArr[j+1].High {
+				res = 1
+			}else{
+				res = 2
+				break
+			}
+		}
+	}
+	return res
+}
+
+func check1(kArr []structs.K, i int) int {
+	res := 0
+	if kArr[i+1].IncRate > 0 && 
+	kArr[i+1].High > kArr[i+2].High &&
+	kArr[i+2].High > kArr[i+3].High &&
+	kArr[i+1].Low > kArr[i+2].Low && 
+	kArr[i+2].Low > kArr[i+3].Low{
+		if kArr[i].High > kArr[i+1].High {
+			res = 1
+		}else{
+			res = 2
+		}
+	}
+	return res
+}
+
+func createK(hq []string, k *structs.K) {
+	// k := new(structs.K)
+	var err error
+	k.Open, err = strconv.ParseFloat(hq[1], 2)
+	if err != nil {
+		fmt.Println("createK err:",err)
+		return
+	}
+	//0=日期，1=开盘，2=收盘，3=涨跌额，4=涨跌幅，5=最低，6=最高，7=成交量，8=成交额，9=换手率
+	k.Close, err = strconv.ParseFloat(hq[2], 2)
+	k.High, err = strconv.ParseFloat(hq[6], 2)
+	k.Low, err = strconv.ParseFloat(hq[5], 2)
+	k.Vol, err = strconv.ParseFloat(hq[7], 2)
+	k.TRate, err = strconv.ParseFloat(strings.Replace(hq[9],"%","",1), 2)
+	k.IncRate, err = strconv.ParseFloat(strings.Replace(hq[4],"%","",1), 2)
 }
 
 func saveList() {

@@ -1,0 +1,17 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    </head>
+    <div class="box">
+    </div>
+
+<script type="text/javascript"  src="./20211113.js"></script>
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+<script>
+    var html = ""
+    data.forEach(element => {
+        html += "<span><span>"+element.f12+"//"+element.f14+"</span>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
+    });
+    $(".box").html(html)
+</script>
+</html>

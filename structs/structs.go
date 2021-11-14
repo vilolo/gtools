@@ -26,3 +26,18 @@ type DbSt struct {
 	Code   string `db:"code"`
 	Sector string `db:"sector"`
 }
+
+type StData struct{
+	Hq [][]string `json:"hq"`
+}
+
+//0=日期，1=开盘，2=收盘，3=涨跌额，4=涨跌幅，5=最低，6=最高，7=成交量，8=成交额，9=换手率
+type K struct{
+	Open float64//1
+	Close float64//2
+	High float64//6
+	Low float64//5
+	Vol float64	//7
+	TRate float64	//9	TurnoverRate
+	IncRate float64	//4 increase
+}
