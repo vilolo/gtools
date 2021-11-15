@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/henrylee2cn/mahonia"
 
@@ -57,17 +57,17 @@ func main() {
 	// 获取历史
 	// updateHistory()
 
-	// 策略
-	strategy()
+	// 数据处理
+	handleData()
 
 	// 处理结果
-	handlePool()
+	// handlePool()
 
 }
 
-func handlePool(){
+func handlePool() {
 	if pool != nil {
-		jsonStr,_ := json.Marshal(pool)
+		jsonStr, _ := json.Marshal(pool)
 		// utils.WriteFile("./data/"+time.Now().Format("20060102")+".js","data="+string(jsonStr))
 
 		html := fmt.Sprintf(`<html>
@@ -87,29 +87,39 @@ func handlePool(){
 		});
 		$(".box").html(html)
 	</script>
-	</html>`,jsonStr)
-	utils.WriteFile("./data/"+time.Now().Format("20060102")+".html",html)
-	}else{
+	</html>`, jsonStr)
+		utils.WriteFile("./data/"+time.Now().Format("20060102")+".html", html)
+	} else {
 		fmt.Println("结果为空")
 	}
 }
 
-func strategy(){
+var total = 0
+var totalUp = 0
+var totalDown = 0
+var findTotal = 0
+var up = 0
+var down = 0
+
+func handleData() {
 	rows, err := dbClient.Query("select code,name,data,sector from st")
 	if err != nil {
-		fmt.Println("err1:",err)
+		fmt.Println("err1:", err)
 		return
 	}
-	defer func ()  {
+	defer func() {
 		if rows != nil {
 			rows.Close()
 		}
 	}()
 	st := new(structs.DbSt)
-	up := 0
-	down := 0
+
+	//策略验证开始index
+	curI := 2
+	checkDay := 2
+	var kArr [10]structs.K
 	for rows.Next() {
-		err = rows.Scan(&st.Code,&st.Name,&st.Data,&st.Sector)
+		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector)
 		if err != nil {
 			fmt.Println("err2:", err)
 			return
@@ -121,79 +131,118 @@ func strategy(){
 		json.Unmarshal([]byte(jsonStr), &stData)
 
 		if len(stData.Hq) > 10 {
-			var kArr [10]structs.K
 			for i := 0; i < 10; i++ {
 				k := new(structs.K)
-				createK(stData.Hq[i],k)
+				createK(stData.Hq[i], k)
 				kArr[i] = *k
 			}
 			// fmt.Println(kArr)
 
 			//== 验证策略 ==
-			// res := check1(kArr[:],6)
-			res := check2(kArr[:],1)
-			if res==1 {
-				up++
-			}else if res==2 {
-				down++
-			}
+
+			totalCheck(kArr[:], curI, curI-checkDay)
+
+			// res := check1(kArr[:], 0) //546 == 331 == 1.65
+
+			check2(kArr[:], curI, curI-checkDay)
 
 			//== 保存结果 ==
-			toPool(kArr[:],*&st.Code,*&st.Name,*&st.Sector)
+			toPool(kArr[:], *&st.Code, *&st.Name, *&st.Sector)
 		}
 	}
-	fmt.Println(up, "==", down)
+
+	totalRatio, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(totalUp)/float64(total)*100), 64)
+	ratio, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(up)/float64(findTotal)*100), 64)
+	upRate, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", ratio-totalRatio), 64)
+	fmt.Println("Date:", kArr[curI].Date)
+	fmt.Println("Total:", total, "==", totalUp, "==", totalDown, "==", totalRatio, "%")
+	fmt.Println("Check:", findTotal, "==", up, "==", down, "==", ratio, "%")
+	fmt.Println("UpRate:", upRate, "%")
 	// fmt.Println(*st)
 }
 
-func p1(kArr []structs.K, i int) bool {
-	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
-	kArr[i].Close > (kArr[i].High + kArr[i].Low)/2 &&
-	kArr[i].High > kArr[i+1].High &&
-	kArr[i+1].High > kArr[i+2].High &&
-	kArr[i].Low > kArr[i+1].Low && 
-	kArr[i+1].Low > kArr[i+2].Low{
-		return true
-	}
-	return false
+func strategy(kArr []structs.K, i int) bool {
+	return p1(kArr, i)
 }
 
-func toPool(kArr []structs.K, code string, name string, sector string)  {
-	if p1(kArr, 0) {
-		pool = append(pool, structs.QtInfo{code,name,sector})
+func toPool(kArr []structs.K, code string, name string, sector string) {
+	if strategy(kArr, 0) {
+		pool = append(pool, structs.QtInfo{code, name, sector})
 	}
 }
 
-func check2(kArr []structs.K, i int) int {
+//全部达标的
+func totalCheck(kArr []structs.K, curI int, endI int) {
 	res := 0
-	if i<=0 {
-		fmt.Println("验证i要大于0")
-		return res
+	if curI <= 0 || curI <= endI {
+		fmt.Println("i 设置有误")
+		return
 	}
-	if p1(kArr,i) {
-		i--
-		for j:=i; j >= 0; j-- {
-			if kArr[j].High > kArr[j+1].High {
+
+	check := false
+
+	//红的就算
+	if kArr[curI].Close > kArr[curI].Open {
+		check = true
+	}
+
+	if check {
+		total++
+		for j := curI - 1; j >= endI; j-- {
+			//kArr[j].High > kArr[j+1].High && kArr[j].Low > kArr[j+1].Low
+			//kArr[j].IncRate > 0 && kArr[j].Close > kArr[j].Open
+			if kArr[j].High > kArr[j+1].High && kArr[j].Low > kArr[j+1].Low {
 				res = 1
-			}else{
+			} else {
 				res = 2
 				break
 			}
 		}
+	}
+	if res == 1 {
+		totalUp++
+	} else if res == 2 {
+		totalDown++
+	}
+}
+
+func check2(kArr []structs.K, curI int, endI int) int {
+	res := 0
+	if curI <= 0 || curI <= endI {
+		fmt.Println("i 设置有误")
+		return res
+	}
+
+	if strategy(kArr, curI) {
+		findTotal++
+		for j := curI - 1; j >= endI; j-- {
+			if kArr[j].High > kArr[j+1].High && kArr[j].Low > kArr[j+1].Low {
+				// if kArr[j].High > kArr[curI].High && kArr[j].Low > kArr[curI].Low {
+				res = 1
+			} else {
+				res = 2
+				break
+			}
+		}
+	}
+	if res == 1 {
+		up++
+	} else if res == 2 {
+		down++
 	}
 	return res
 }
 
 func check1(kArr []structs.K, i int) int {
 	res := 0
-	if kArr[i+1].IncRate > 0 && 
-	kArr[i+1].High > kArr[i+2].High &&
-	kArr[i+2].High > kArr[i+3].High &&
-	kArr[i+1].Low > kArr[i+2].Low && 
-	kArr[i+2].Low > kArr[i+3].Low{
+	if kArr[i+1].IncRate > 0 &&
+		kArr[i+1].High > kArr[i+2].High &&
+		kArr[i+2].High > kArr[i+3].High &&
+		kArr[i+1].Low > kArr[i+2].Low &&
+		kArr[i+2].Low > kArr[i+3].Low {
 		if kArr[i].High > kArr[i+1].High {
 			res = 1
-		}else{
+		} else {
 			res = 2
 		}
 	}
@@ -205,16 +254,17 @@ func createK(hq []string, k *structs.K) {
 	var err error
 	k.Open, err = strconv.ParseFloat(hq[1], 2)
 	if err != nil {
-		fmt.Println("createK err:",err)
+		fmt.Println("createK err:", err)
 		return
 	}
 	//0=日期，1=开盘，2=收盘，3=涨跌额，4=涨跌幅，5=最低，6=最高，7=成交量，8=成交额，9=换手率
+	k.Date = hq[0]
 	k.Close, err = strconv.ParseFloat(hq[2], 2)
 	k.High, err = strconv.ParseFloat(hq[6], 2)
 	k.Low, err = strconv.ParseFloat(hq[5], 2)
 	k.Vol, err = strconv.ParseFloat(hq[7], 2)
-	k.TRate, err = strconv.ParseFloat(strings.Replace(hq[9],"%","",1), 2)
-	k.IncRate, err = strconv.ParseFloat(strings.Replace(hq[4],"%","",1), 2)
+	k.TRate, err = strconv.ParseFloat(strings.Replace(hq[9], "%", "", 1), 2)
+	k.IncRate, err = strconv.ParseFloat(strings.Replace(hq[4], "%", "", 1), 2)
 }
 
 func saveList() {
@@ -296,4 +346,16 @@ func updateHistory() {
 		}
 	}
 
+}
+
+func p1(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i+1].High > kArr[i+2].High &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i+1].Low > kArr[i+2].Low {
+		return true
+	}
+	return false
 }
