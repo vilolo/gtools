@@ -119,7 +119,7 @@ func handleData() {
 	checkDay := 1
 	var kArr [10]structs.K
 	for rows.Next() {
-		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector)
+		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector, &st.IncRate)
 		if err != nil {
 			fmt.Println("err2:", err)
 			return
