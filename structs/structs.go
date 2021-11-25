@@ -1,9 +1,10 @@
 package structs
 
 type QtInfo struct {
-	Code   string `json:"f12"`
-	Name   string `json:"f14"`
-	Sector string `json:"f100"`
+	Code    string `json:"f12"`
+	Name    string `json:"f14"`
+	Sector  string `json:"f100"`
+	IncRate string `json:"f3"`
 }
 
 type QtProcess1 struct {
@@ -20,11 +21,12 @@ type DbTest struct {
 }
 
 type DbSt struct {
-	ID     int    `db:"id"`
-	Data   string `db:"data"`
-	Name   string `db:"name"`
-	Code   string `db:"code"`
-	Sector string `db:"sector"`
+	ID      int    `db:"id"`
+	Data    string `db:"data"`
+	Name    string `db:"name"`
+	Code    string `db:"code"`
+	Sector  string `db:"sector"`
+	IncRate string `db:"inc_rate"`
 }
 
 type StData struct {

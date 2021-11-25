@@ -61,7 +61,7 @@ func main() {
 	handleData()
 
 	// 处理结果
-	// handlePool()
+	handlePool()
 
 }
 
@@ -83,7 +83,7 @@ func handlePool() {
 		data = %s
 		$(".info").html(data.length)
 		data.forEach((element,i) => {
-			html += "<span><span>"+(i+1)+"//"+element.f12+"//"+element.f14+"//"+element.f100+"</span><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
+			html += "<span><span>"+(i+1)+"//"+element.f12+"//"+element.f14+"//"+element.f100+"//"+element.f3+"%%</span><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
 		});
 		$(".box").html(html)
 	</script>
@@ -116,7 +116,7 @@ func handleData() {
 
 	//策略验证开始index
 	curI := 2
-	checkDay := 2
+	checkDay := 1
 	var kArr [10]structs.K
 	for rows.Next() {
 		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector)
@@ -147,7 +147,7 @@ func handleData() {
 			check2(kArr[:], curI, curI-checkDay)
 
 			//== 保存结果 ==
-			toPool(kArr[:], *&st.Code, *&st.Name, *&st.Sector)
+			toPool(kArr[:], *&st.Code, *&st.Name, *&st.Sector, *&st.IncRate)
 		}
 	}
 
@@ -165,9 +165,9 @@ func strategy(kArr []structs.K, i int) bool {
 	return p1(kArr, i)
 }
 
-func toPool(kArr []structs.K, code string, name string, sector string) {
+func toPool(kArr []structs.K, code string, name string, sector string, inc_rate string) {
 	if strategy(kArr, 0) {
-		pool = append(pool, structs.QtInfo{code, name, sector})
+		pool = append(pool, structs.QtInfo{code, name, sector, inc_rate})
 	}
 }
 
@@ -275,7 +275,7 @@ func saveList() {
 	// fmt.Println(bbb)
 	// return
 
-	url := "https://98.push2.eastmoney.com/api/qt/clist/get?cb=jQuery112405369178137598498_1636469855448&pn=1&pz=5000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f12,f14,f100&_=1636469855466"
+	url := "https://98.push2.eastmoney.com/api/qt/clist/get?cb=jQuery112405369178137598498_1636469855448&pn=1&pz=5000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f12,f14,f100,f3&_=1636469855466"
 	resp, err := utils.GET(url)
 	if err != nil {
 		fmt.Println("1:" + err.Error())
@@ -287,7 +287,7 @@ func saveList() {
 
 	for _, v := range qtData.Data.Diff {
 		// fmt.Println(k, v)
-		_, err := dbClient.Exec("insert into st(name,code,sector)values(?,?,?)", v.Name, v.Code, v.Sector)
+		_, err := dbClient.Exec("insert into st(name,code,sector,inc_rate)values(?,?,?,?)", v.Name, v.Code, v.Sector, v.IncRate)
 		if err != nil {
 			fmt.Println("===", err)
 		}
@@ -340,7 +340,19 @@ func updateHistory() {
 		enc := mahonia.NewDecoder("gbk")
 		// fmt.Println("!!!!", enc.ConvertString(resp))
 
-		_, err = dbClient.Exec("update st set data = ? where code = ?", enc.ConvertString(resp), *&st.Code)
+		data := enc.ConvertString(resp)
+
+		jsonStr := data[22 : len(data)-3]
+		var stData structs.StData
+		json.Unmarshal([]byte(jsonStr), &stData)
+		inc_rate := 0.0
+		if len(stData.Hq) > 0 {
+			k := new(structs.K)
+			createK(stData.Hq[0], k)
+			inc_rate = k.IncRate
+		}
+
+		_, err = dbClient.Exec("update st set data = ?, inc_rate = ? where code = ?", enc.ConvertString(resp), inc_rate, *&st.Code)
 		if err != nil {
 			fmt.Println("===", err)
 		}
