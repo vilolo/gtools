@@ -102,7 +102,7 @@ var up = 0
 var down = 0
 
 func handleData() {
-	rows, err := dbClient.Query("select code,name,data,sector from st")
+	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
