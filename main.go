@@ -61,7 +61,7 @@ func main() {
 	handleData()
 
 	// 处理结果
-	handlePool()
+	// handlePool()
 
 }
 
@@ -115,8 +115,8 @@ func handleData() {
 	st := new(structs.DbSt)
 
 	//策略验证开始index
-	curI := 2
-	checkDay := 1
+	curI := checkI
+	checkDay := checkDay
 	var kArr [10]structs.K
 	for rows.Next() {
 		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector, &st.IncRate)
@@ -159,10 +159,6 @@ func handleData() {
 	fmt.Println("Check:", findTotal, "==", up, "==", down, "==", ratio, "%")
 	fmt.Println("UpRate:", upRate, "%")
 	// fmt.Println(*st)
-}
-
-func strategy(kArr []structs.K, i int) bool {
-	return p1(kArr, i)
 }
 
 func toPool(kArr []structs.K, code string, name string, sector string, inc_rate string) {
@@ -360,6 +356,14 @@ func updateHistory() {
 
 }
 
+var checkI = 4
+var checkDay = 1
+
+func strategy(kArr []structs.K, i int) bool {
+	return p4(kArr, i)
+}
+
+//3up	yy
 func p1(kArr []structs.K, i int) bool {
 	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
 		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
@@ -367,6 +371,45 @@ func p1(kArr []structs.K, i int) bool {
 		kArr[i+1].High > kArr[i+2].High &&
 		kArr[i].Low > kArr[i+1].Low &&
 		kArr[i+1].Low > kArr[i+2].Low {
+		return true
+	}
+	return false
+}
+
+//in+up		y
+func p2(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open && //突
+		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 && //力
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i+1].High <= kArr[i+2].High &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i+1].Low > kArr[i+2].Low {
+		return true
+	}
+	return false
+}
+
+//ii+up		x
+func p3(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open && //突
+		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 && //力
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i+1].High <= kArr[i+2].High &&
+		kArr[i+1].Low > kArr[i+2].Low &&
+		kArr[i+2].High <= kArr[i+3].High &&
+		kArr[i+2].Low > kArr[i+3].Low {
+		return true
+	}
+	return false
+}
+
+//2up	y
+func p4(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Low > kArr[i+1].Low {
 		return true
 	}
 	return false
