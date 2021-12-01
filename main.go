@@ -356,11 +356,11 @@ func updateHistory() {
 
 }
 
-var checkI = 4
+var checkI = 1
 var checkDay = 1
 
 func strategy(kArr []structs.K, i int) bool {
-	return p4(kArr, i)
+	return p1(kArr, i)
 }
 
 //3up	yy
@@ -410,6 +410,17 @@ func p4(kArr []structs.K, i int) bool {
 		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i].Low > kArr[i+1].Low {
+		return true
+	}
+	return false
+}
+
+//out
+func p5(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Low < kArr[i+1].Low {
 		return true
 	}
 	return false
