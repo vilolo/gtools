@@ -3,11 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"./strategys"
 )
 
 func main() {
 	fmt.Println("m2 start !!!")
 
-	id := flag.Int("id", 0, "id")
-	fmt.Println(*id)
+	t := flag.Int("t", 0, "type")
+	flag.Parse()
+	// fmt.Println(*t)
+
+	//检测
+	if *t == 0 {
+		strategys.M()
+	}
 }

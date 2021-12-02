@@ -1,6 +1,7 @@
 package utils
 
 import (
+	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
 	"fmt"
 	"os"
@@ -17,7 +18,7 @@ const (
 	DATABASE = "test"
 )
 
-func getDB() *sql.DB {
+func GetDB() *sql.DB {
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s", USERNAME, PASSWORD, NETWORK, SERVER, PORT, DATABASE)
 	DB, err := sql.Open("mysql", dsn)
 	if err != nil {
