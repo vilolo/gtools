@@ -61,7 +61,7 @@ func main() {
 	handleData()
 
 	// 处理结果
-	// handlePool()
+	handlePool()
 
 }
 
@@ -360,7 +360,7 @@ var checkI = 1
 var checkDay = 1
 
 func strategy(kArr []structs.K, i int) bool {
-	return p1(kArr, i)
+	return p5(kArr, i)
 }
 
 //3up	yy
