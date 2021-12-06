@@ -44,3 +44,10 @@ type K struct {
 	TRate   float64 //9	TurnoverRate
 	IncRate float64 //4 increase
 }
+
+type Res struct {
+	Date    string
+	FindNum int
+	UpNum   int
+	DownNum int
+}
