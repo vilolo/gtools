@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"strconv"
 	"strings"
@@ -48,21 +49,31 @@ func init() {
 	dbClient = DB
 }
 
+var p = 0
+
 func main() {
 	fmt.Println("start !!")
+	t := flag.String("t", "", "type")
+	p = *flag.Int("p", 0, "p")
+	flag.Parse()
 
 	// 获取列表
 	// saveList()
 
 	// 获取历史
-	// updateHistory()
+	if *t == "update" {
+		updateHistory()
+	} else if *t == "get" {
+		// 数据处理
+		handleData()
 
-	// 数据处理
-	handleData()
+		// 处理结果
+		handlePool()
+	} else {
+		fmt.Println("type ERR !!!")
+	}
 
-	// 处理结果
-	handlePool()
-
+	fmt.Println("end >>")
 }
 
 func handlePool() {
@@ -88,7 +99,7 @@ func handlePool() {
 		$(".box").html(html)
 	</script>
 	</html>`, jsonStr)
-		utils.WriteFile("./data/"+time.Now().Format("20060102")+".html", html)
+		utils.WriteFile("./data/"+time.Now().Format("20060102")+"-"+pName+".html", html)
 	} else {
 		fmt.Println("结果为空")
 	}
@@ -303,6 +314,7 @@ func testDB() {
 
 func updateHistory() {
 	// rows, err := dbClient.Query("select code from st where updated_at is null or updated_at < ? limit 2", time.Now().Format("2006-01-02"))
+	_, err := dbClient.Exec("update st set data = null")
 	rows, err := dbClient.Query("select code from st where data is null")
 	// rows, err := dbClient.Query("select code from st limit 2")
 	defer func() {
@@ -358,13 +370,23 @@ func updateHistory() {
 
 var checkI = 1
 var checkDay = 1
+var pName = "no"
 
 func strategy(kArr []structs.K, i int) bool {
+	if p == 1 {
+		return p1(kArr, i)
+	}
+
+	if p == 5 {
+		return p5(kArr, i)
+	}
+
 	return p1(kArr, i)
 }
 
 //3up	yy
 func p1(kArr []structs.K, i int) bool {
+	pName = "up"
 	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
 		// kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
@@ -418,6 +440,7 @@ func p4(kArr []structs.K, i int) bool {
 
 //out
 func p5(kArr []structs.K, i int) bool {
+	pName = "out"
 	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
 		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
 		kArr[i].High > kArr[i+1].High &&
