@@ -18,7 +18,7 @@ var pool []structs.QtInfo
 
 //todo
 var kNum = 50
-var checkDays = 1 //控制后面验证的天数
+var checkDays = 2 //控制后面验证的天数
 
 func init() {
 	db = utils.GetDB()
@@ -69,8 +69,8 @@ func analysis() {
 			}
 
 			//todo
-			checkP(kArr, new(p1), &r0)
-			checkP(kArr, new(p3), &r1)
+			checkP(kArr, new(p0), &r0)
+			checkP(kArr, new(p2), &r1)
 
 		}
 	}
@@ -111,7 +111,7 @@ func checkP(kArr []structs.K, p plan, r *[]structs.Res) {
 			(*r)[ri].FindNum += 1
 
 			//后面checkDays验证
-			if checkWin(kArr, i, checkDays) {
+			if checkWin(kArr, i, checkDays, false) {
 				(*r)[ri].UpNum += 1
 			} else {
 				(*r)[ri].DownNum += 1
@@ -120,14 +120,19 @@ func checkP(kArr []structs.K, p plan, r *[]structs.Res) {
 	}
 }
 
-func checkWin(kArr []structs.K, i int, checkDays int) bool {
+func checkWin(kArr []structs.K, i int, checkDays int, isSuccessive bool) bool {
 	var res int
 	for j := i - 1; j >= i-checkDays; j-- {
 		if kArr[j].High > kArr[j+1].High && kArr[j].Low > kArr[j+1].Low && kArr[j].Close > kArr[j+1].Close {
 			res = 1
+			if !isSuccessive {
+				break
+			}
 		} else {
 			res = 2
-			break
+			if isSuccessive {
+				break
+			}
 		}
 	}
 	if res == 1 {
