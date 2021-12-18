@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	"./strategys"
 )
 
@@ -17,4 +18,6 @@ func main() {
 	if *t == 0 {
 		strategys.M()
 	}
+
+	//大盘，板块
 }

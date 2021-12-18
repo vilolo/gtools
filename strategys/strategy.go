@@ -94,7 +94,7 @@ func analysis() {
 	}
 
 	r0Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r0Avg/float64(len(r0)))), 64)
-	r1Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r1Avg/float64(len(r0)))), 64)
+	r1Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r1Avg/float64(len(r1)))), 64)
 	upRateAvg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", r1Avg-r0Avg), 64)
 
 	fmt.Println("r0 avg：", r0Avg, "%, r1 avg：", r1Avg, "，", upRateAvg, "%")
