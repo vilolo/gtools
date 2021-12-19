@@ -386,6 +386,10 @@ func strategy(kArr []structs.K, i int) bool {
 		return p6(kArr, i)
 	}
 
+	if p == 7 {
+		return p7(kArr, i)
+	}
+
 	return p1(kArr, i)
 }
 
@@ -463,6 +467,16 @@ func p6(kArr []structs.K, i int) bool {
 		kArr[i+1].Close > kArr[i+1].Open &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i].Low > kArr[i+1].Low {
+		return true
+	}
+	return false
+}
+
+func p7(kArr []structs.K, i int) bool {
+	pName = "2s"
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.6+kArr[i].Low) &&
+		kArr[i+1].Close > ((kArr[i+1].High-kArr[i+1].Low)*0.6+kArr[i+1].Low) {
 		return true
 	}
 	return false
