@@ -17,7 +17,7 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-var kNum = 50
+var kNum = 100
 var checkDays = 1 //控制后面验证的天数
 
 func init() {
@@ -70,7 +70,7 @@ func analysis() {
 
 			//todo
 			checkP(kArr, new(p1), &r0)
-			checkP(kArr, new(p3), &r1)
+			checkP(kArr, new(p4), &r1)
 
 		}
 	}
@@ -202,6 +202,20 @@ func (pp p3) p(kArr []structs.K, i int) bool {
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i].Low < kArr[i+1].Low {
+		return true
+	}
+	return false
+}
+
+type p4 struct{}
+
+//red2
+func (pp p4) p(kArr []structs.K, i int) bool {
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.6+kArr[i].Low) &&
+		kArr[i+1].Close > kArr[i+1].Open &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Low > kArr[i+1].Low {
 		return true
 	}
 	return false

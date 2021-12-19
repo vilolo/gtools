@@ -54,8 +54,9 @@ var p = 0
 func main() {
 	fmt.Println("start !!")
 	t := flag.String("t", "", "type")
-	p = *flag.Int("p", 0, "p")
+	pp := flag.Int("p", 0, "p")
 	flag.Parse()
+	p = *pp
 
 	// 获取列表
 	// saveList()
@@ -381,6 +382,10 @@ func strategy(kArr []structs.K, i int) bool {
 		return p5(kArr, i)
 	}
 
+	if p == 6 {
+		return p6(kArr, i)
+	}
+
 	return p1(kArr, i)
 }
 
@@ -445,6 +450,19 @@ func p5(kArr []structs.K, i int) bool {
 		kArr[i].Close > (kArr[i].High+kArr[i].Low)/2 &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i].Low < kArr[i+1].Low {
+		return true
+	}
+	return false
+}
+
+//red2
+func p6(kArr []structs.K, i int) bool {
+	pName = "2up"
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.6+kArr[i].Low) &&
+		kArr[i+1].Close > kArr[i+1].Open &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Low > kArr[i+1].Low {
 		return true
 	}
 	return false
