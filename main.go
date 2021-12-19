@@ -315,8 +315,8 @@ func testDB() {
 
 func updateHistory() {
 	// rows, err := dbClient.Query("select code from st where updated_at is null or updated_at < ? limit 2", time.Now().Format("2006-01-02"))
-	_, err := dbClient.Exec("update st set data = null")
-	rows, err := dbClient.Query("select code from st where data is null")
+	// _, err := dbClient.Exec("update st set data = null")
+	rows, err := dbClient.Query("select code from st where updated_at < ?", time.Now().Format("2006-01-02"))
 	// rows, err := dbClient.Query("select code from st limit 2")
 	defer func() {
 		if rows != nil {
@@ -361,7 +361,7 @@ func updateHistory() {
 			inc_rate = k.IncRate
 		}
 
-		_, err = dbClient.Exec("update st set data = ?, inc_rate = ? where code = ?", enc.ConvertString(resp), inc_rate, *&st.Code)
+		_, err = dbClient.Exec("update st set data = ?, inc_rate = ?, updated_at = ? where code = ?", enc.ConvertString(resp), inc_rate, time.Now().Format("2006-01-02 03:04:05"), *&st.Code)
 		if err != nil {
 			fmt.Println("===", err)
 		}
