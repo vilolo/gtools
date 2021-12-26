@@ -17,13 +17,8 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-<<<<<<< HEAD
 var kNum = 100
 var checkDays = 1 //控制后面验证的天数
-=======
-var kNum = 50
-var checkDays = 2 //控制后面验证的天数
->>>>>>> cf8be03afb9a31beab2a9414d931c0be6a40e8eb
 
 func init() {
 	db = utils.GetDB()
@@ -74,13 +69,8 @@ func analysis() {
 			}
 
 			//todo
-<<<<<<< HEAD
 			checkP(kArr, new(p1), &r0)
 			checkP(kArr, new(p4), &r1)
-=======
-			checkP(kArr, new(p0), &r0)
-			checkP(kArr, new(p2), &r1)
->>>>>>> cf8be03afb9a31beab2a9414d931c0be6a40e8eb
 
 		}
 	}

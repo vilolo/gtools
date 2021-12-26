@@ -100,7 +100,8 @@ func handlePool() {
 		$(".box").html(html)
 	</script>
 	</html>`, jsonStr)
-		utils.WriteFile("./data/"+time.Now().Format("20060102")+"-"+pName+".html", html)
+		// utils.WriteFile("./data/"+time.Now().Format("20060102")+"-"+pName+".html", html)
+		utils.WriteFile("./data/"+kDate+"-"+pName+".html", html)
 	} else {
 		fmt.Println("结果为空")
 	}
@@ -112,9 +113,10 @@ var totalDown = 0
 var findTotal = 0
 var up = 0
 var down = 0
+var kDate = ""
 
 func handleData() {
-	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st")
+	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st order by sector")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
@@ -163,6 +165,8 @@ func handleData() {
 		}
 	}
 
+	kDate = kArr[0].Date
+
 	totalRatio, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(totalUp)/float64(total)*100), 64)
 	ratio, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(up)/float64(findTotal)*100), 64)
 	upRate, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", ratio-totalRatio), 64)
@@ -174,7 +178,7 @@ func handleData() {
 }
 
 func toPool(kArr []structs.K, code string, name string, sector string, inc_rate string) {
-	if strategy(kArr, 0) {
+	if strategy(kArr, 0) && !strings.Contains(name, "ST") {
 		pool = append(pool, structs.QtInfo{code, name, sector, inc_rate})
 	}
 }
@@ -316,7 +320,7 @@ func testDB() {
 func updateHistory() {
 	// rows, err := dbClient.Query("select code from st where updated_at is null or updated_at < ? limit 2", time.Now().Format("2006-01-02"))
 	// _, err := dbClient.Exec("update st set data = null")
-	rows, err := dbClient.Query("select code from st where updated_at < ?", time.Now().Format("2006-01-02"))
+	rows, err := dbClient.Query("select code from st where updated_at is null or updated_at < ?", time.Now().Format("2006-01-02"))
 	// rows, err := dbClient.Query("select code from st limit 2")
 	defer func() {
 		if rows != nil {
