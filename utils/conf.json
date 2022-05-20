@@ -1,0 +1,8 @@
+{
+    "Db_username":"root",
+    "Db_pwd":"root",
+    "Db_server":"localhost",
+    "Db_database":"test",
+    "Db_port":3306,
+    "Db_network":"tcp"
+}
