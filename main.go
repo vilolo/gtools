@@ -61,7 +61,7 @@ func main() {
 	// 获取列表
 	// saveList()
 
-	// 获取历史
+	// 获取历史	-t=update
 	if *t == "update" {
 		updateHistory()
 	} else if *t == "get" {

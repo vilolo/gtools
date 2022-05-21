@@ -71,7 +71,6 @@ func analysis() {
 			//todo
 			checkP(kArr, new(p1), &r0)
 			checkP(kArr, new(p6), &r1)
-
 		}
 	}
 
@@ -269,6 +268,20 @@ func (pp p6) p(kArr []structs.K, i int) bool {
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i+1].High > kArr[i+2].High &&
 		kArr[i+1].Low > kArr[i+2].Low {
+		return true
+	}
+	return false
+}
+
+type p10 struct{}
+
+func (pp p10) p(kArr []structs.K, i int) bool {
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > kArr[i+1].Close &&
+		kArr[i].Open < ((kArr[i].High-kArr[i].Low)*0.3+kArr[i].Low) &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.8+kArr[i].Low) {
 		return true
 	}
 	return false

@@ -51,3 +51,12 @@ type Res struct {
 	UpNum   int
 	DownNum int
 }
+
+type Conf struct {
+	Db_username string
+	Db_pwd      string
+	Db_server   string
+	Db_database string
+	Db_port     int
+	Db_network  string
+}
