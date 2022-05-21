@@ -17,8 +17,8 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-var kNum = 100
-var checkDays = 1 //控制后面验证的天数
+var kNum = 40
+var checkDays = 2 //控制后面验证的天数
 
 func init() {
 	db = utils.GetDB()
@@ -70,7 +70,7 @@ func analysis() {
 
 			//todo
 			checkP(kArr, new(p1), &r0)
-			checkP(kArr, new(p4), &r1)
+			checkP(kArr, new(p6), &r1)
 
 		}
 	}
@@ -111,7 +111,7 @@ func checkP(kArr []structs.K, p plan, r *[]structs.Res) {
 			(*r)[ri].FindNum += 1
 
 			//后面checkDays验证
-			if checkWin(kArr, i, checkDays, false) {
+			if checkWin2(kArr, i, checkDays, false) {
 				(*r)[ri].UpNum += 1
 			} else {
 				(*r)[ri].DownNum += 1
@@ -140,6 +140,24 @@ func checkWin(kArr []structs.K, i int, checkDays int, isSuccessive bool) bool {
 	} else {
 		return false
 	}
+}
+
+//高点有抬升1%，低点不破
+func checkWin2(kArr []structs.K, i int, checkDays int, isSuccessive bool) bool {
+	//破低
+	for j := i - 1; j >= i-checkDays; j-- {
+		if kArr[j].Low < kArr[i].Low {
+			return false
+		}
+	}
+
+	for j := i - 1; j >= i-checkDays; j-- {
+		if ((kArr[j].High - kArr[i].Close) / kArr[i].Close) > 0.01 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func createK(hq []string, k *structs.K) {
@@ -177,7 +195,7 @@ type p1 struct{}
 //3up	yy
 func (pp p1) p(kArr []structs.K, i int) bool {
 	if kArr[i].IncRate > 0 && kArr[i].Close > kArr[i].Open &&
-		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.8+kArr[i].Low) &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i+1].High > kArr[i+2].High &&
 		kArr[i].Low > kArr[i+1].Low &&
@@ -221,6 +239,36 @@ func (pp p4) p(kArr []structs.K, i int) bool {
 		kArr[i+1].Close > kArr[i+1].Open &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i].Low > kArr[i+1].Low {
+		return true
+	}
+	return false
+}
+
+type p5 struct{}
+
+//一般强
+func (pp p5) p(kArr []structs.K, i int) bool {
+	//收红，二分一上，低点抬升或高于前高
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.6+kArr[i].Low) &&
+		(kArr[i].Low >= kArr[i+1].Low || kArr[i].High > kArr[i+1].High) {
+		return true
+	}
+	return false
+}
+
+type p6 struct{}
+
+//测试软件公式
+func (pp p6) p(kArr []structs.K, i int) bool {
+	//红，高于前收盘，二分一高，低点抬高，高点抬高
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].IncRate > 0 &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i+1].High > kArr[i+2].High &&
+		kArr[i+1].Low > kArr[i+2].Low {
 		return true
 	}
 	return false
