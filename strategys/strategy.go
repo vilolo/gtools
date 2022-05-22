@@ -17,7 +17,7 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-var kNum = 20
+var kNum = 40
 var checkDays = 2 //控制后面验证的天数
 
 func init() {
@@ -69,7 +69,7 @@ func analysis() {
 			}
 
 			//todo
-			checkP(kArr, new(p3), &r0)
+			checkP(kArr, new(p6), &r0)
 			checkP(kArr, new(p7), &r1)
 		}
 	}
@@ -264,7 +264,7 @@ func (pp p6) p(kArr []structs.K, i int) bool {
 	if kArr[i].Close > kArr[i].Open &&
 		kArr[i].IncRate > 0 &&
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
-		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i].Low >= kArr[i+1].Low &&
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i+1].High > kArr[i+2].High &&
 		kArr[i+1].Low > kArr[i+2].Low {
@@ -279,8 +279,8 @@ func (pp p7) p(kArr []structs.K, i int) bool {
 	if kArr[i].Close > kArr[i].Open &&
 		kArr[i].Close > kArr[i+1].Close &&
 		kArr[i].High > kArr[i+1].High &&
-		kArr[i].Open < ((kArr[i].High-kArr[i].Low)*0.3+kArr[i].Low) &&
-		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.3+kArr[i].Low) &&
+		kArr[i].Low >= kArr[i+1].Low &&
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.8+kArr[i].Low) {
 		return true
 	}
