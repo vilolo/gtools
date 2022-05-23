@@ -60,3 +60,9 @@ type Conf struct {
 	Db_port     int
 	Db_network  string
 }
+
+type DaItems struct {
+	Low_up   int
+	High_up  int
+	Close_up int
+}
