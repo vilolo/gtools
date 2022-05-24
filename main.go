@@ -60,6 +60,7 @@ func main() {
 
 	// 获取列表
 	// saveList()
+	// return
 
 	// 获取历史	-t=update
 	if *t == "update" {
@@ -116,7 +117,7 @@ var down = 0
 var kDate = ""
 
 func handleData() {
-	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st order by sector")
+	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 order by sector")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
@@ -178,7 +179,8 @@ func handleData() {
 }
 
 func toPool(kArr []structs.K, code string, name string, sector string, inc_rate string) {
-	if strategy(kArr, 0) && !strings.Contains(name, "ST") {
+	// if strategy(kArr, 0) && !strings.Contains(name, "ST") {
+	if strategy(kArr, 0) {
 		pool = append(pool, structs.QtInfo{code, name, sector, inc_rate})
 	}
 }
@@ -320,7 +322,7 @@ func testDB() {
 func updateHistory() {
 	// rows, err := dbClient.Query("select code from st where updated_at is null or updated_at < ? limit 2", time.Now().Format("2006-01-02"))
 	// _, err := dbClient.Exec("update st set data = null")
-	rows, err := dbClient.Query("select code from st where updated_at is null or updated_at < ?", time.Now().Format("2006-01-02"))
+	rows, err := dbClient.Query("select code, sector from st where updated_at is null or updated_at < ?", time.Now().Format("2006-01-02"))
 	// rows, err := dbClient.Query("select code from st limit 2")
 	defer func() {
 		if rows != nil {
@@ -333,14 +335,21 @@ func updateHistory() {
 		return
 	}
 	st := new(structs.DbSt)
+	var code string
 	for rows.Next() {
-		err = rows.Scan(&st.Code) //不scan会导致连接不释放
+		err = rows.Scan(&st.Code, &st.Sector) //不scan会导致连接不释放
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			return
 		}
 
-		url := fmt.Sprintf("https://q.stock.sohu.com/hisHq?code=cn_%s&start=%s&end=%s&stat=1&order=D&period=d&callback=historySearchHandler&rt=jsonp", *&st.Code, START_DATE, endDate)
+		if *&st.Sector == "大盘指数" {
+			code = "zs_" + *&st.Code
+		} else {
+			code = "cn_" + *&st.Code
+		}
+
+		url := fmt.Sprintf("https://q.stock.sohu.com/hisHq?code=%s&start=%s&end=%s&stat=1&order=D&period=d&callback=historySearchHandler&rt=jsonp", code, START_DATE, endDate)
 		// fmt.Println(url)
 
 		resp, err := utils.GET(url)

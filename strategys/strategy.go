@@ -34,7 +34,7 @@ func analysis() {
 	st := new(structs.DbSt)
 	var stData structs.StData
 
-	rows, err := db.Query("select code,name,data,sector,inc_rate from st")
+	rows, err := db.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return

@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	structs "./structs"
 	utils "./utils"
 )
 
 //todo
-var kNum = 10
+var kNum = 20
 
 var db *sql.DB
 
@@ -28,10 +29,11 @@ func main() {
 //判断要素是否达标
 //计算要素达标比例，要素可能不同百分百是不同要素，如高1%和高2%
 //找出所有比例高的，说明相关性高
+//== total = 0当前强势 数据 = 1前k 对比 2前前k
 func da1() {
 	st := new(structs.DbSt)
 	var stData structs.StData
-	rows, err := db.Query("select code,name,data,sector,inc_rate from st")
+	rows, err := db.Query("select code,name,data,sector,inc_rate from st where sector <> '大盘指数' and locate('ST',name)=0")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
@@ -43,10 +45,13 @@ func da1() {
 	}()
 
 	// data := make(map[string]interface{})
-	// data := make(map[string]structs.DaItems)
+	data := make(map[string]structs.DaItems)
 
-	total := 0
-	res := structs.DaItems{}
+	marketKArr := marketKArr()
+
+	// total := 0
+	// res := structs.DaItems{}
+	var all_well_count int
 	for rows.Next() {
 		var kArr []structs.K
 		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector, &st.IncRate)
@@ -64,35 +69,101 @@ func da1() {
 				kArr = append(kArr, *k)
 			}
 
-			cpi := 1
-			if checkP(kArr, cpi) {
-				total++
+			for cpi := 0; cpi < kNum-5; cpi++ {
+				var item structs.DaItems
+				if _, ok := data[kArr[cpi].Date]; ok {
+					item = data[kArr[cpi].Date]
+					// item.Low_up = item.Low_up + 1
+					// data[kArr[cpi].Date] = item
+				} else {
+					item = structs.DaItems{}
+					// item.Low_up = 0
+					// data[kArr[cpi].Date] = item
 
-				if kArr[cpi+1].Low > kArr[cpi+2].Low {
-					res.Low_up++
-					// if _, ok := data[kArr[cpi].Date]; ok {
-					// 	item := data[kArr[cpi].Date]
-					// 	item.Low_up = item.Low_up + 1
-					// 	data[kArr[cpi].Date] = item
-					// } else {
-					// 	item := structs.DaItems{}
-					// 	item.Low_up = 0
-					// 	data[kArr[cpi].Date] = item
-					// }
+					//加入大盘数据
+					for k, v := range marketKArr {
+						if v.Date == kArr[cpi].Date {
+							item.Sz1_close = marketKArr[k+1].Close
+							item.Sz2_close = marketKArr[k+2].Close
+							break
+						}
+					}
 				}
 
-				if kArr[cpi+1].High > kArr[cpi+2].High {
-					res.High_up++
-				}
+				if checkP(kArr, cpi) {
+					all_well_count = 0
+					item.Total++
+					if kArr[cpi+1].Low > kArr[cpi+2].Low {
+						item.Low_up++
+						all_well_count++
+					}
 
-				if kArr[cpi+1].Close > kArr[cpi+2].Close {
-					res.Close_up++
+					if kArr[cpi+1].High > kArr[cpi+2].High {
+						item.High_up++
+						all_well_count++
+					}
+
+					if kArr[cpi+1].Close > kArr[cpi+2].Close {
+						item.Close_up++
+						all_well_count++
+					}
+					if all_well_count == 3 {
+						item.All_well++
+					}
 				}
+				data[kArr[cpi].Date] = item
 			}
+
 		}
 	}
-	fmt.Println(total)
-	fmt.Println(res)
+
+	var keys []string
+
+	for k, _ := range data {
+		keys = append(keys, k)
+		// if v.Total > 10 {
+		// 	fmt.Printf("date %s; total %d; low-up %s; high-up %s; close-up %s; all_well %s \n", k, v.Total,
+		// 		fmt.Sprintf("%.2f", float32(v.Low_up)/float32(v.Total)*100),
+		// 		fmt.Sprintf("%.2f", float32(v.High_up)/float32(v.Total)*100),
+		// 		fmt.Sprintf("%.2f", float32(v.Close_up)/float32(v.Total)*100),
+		// 		fmt.Sprintf("%.2f", float32(v.All_well)/float32(v.Total)*100))
+		// }
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := data[k]
+		if v.Total > 10 {
+			fmt.Printf("date %s; total %d; low-up %s; high-up %s; close-up %s; all-well %s; sz-close-up %s; \n", k, v.Total,
+				fmt.Sprintf("%.2f", float32(v.Low_up)/float32(v.Total)*100),
+				fmt.Sprintf("%.2f", float32(v.High_up)/float32(v.Total)*100),
+				fmt.Sprintf("%.2f", float32(v.Close_up)/float32(v.Total)*100),
+				fmt.Sprintf("%.2f", float32(v.All_well)/float32(v.Total)*100),
+				fmt.Sprintf("%.2f", v.Sz1_close-v.Sz2_close))
+		}
+	}
+}
+
+func marketKArr() []structs.K {
+	st := new(structs.DbSt)
+	szRow := db.QueryRow("select code,name,data,sector,inc_rate from st where sector = '大盘指数'")
+	err := szRow.Scan(&st.Code, &st.Name, &st.Data, &st.Sector, &st.IncRate)
+	if err != nil {
+		fmt.Println("err2:", err)
+		return nil
+	}
+	var kArr []structs.K
+	var stData structs.StData
+	jsonStr := (st.Data)[22 : len(st.Data)-3]
+	json.Unmarshal([]byte(jsonStr), &stData)
+	for i := 0; i < 80; i++ {
+		k := new(structs.K)
+		utils.CreateK(stData.Hq[i], k)
+		kArr = append(kArr, *k)
+	}
+	// fmt.Println(kArr)
+	return kArr
 }
 
 func checkP(kArr []structs.K, i int) bool {

@@ -62,7 +62,11 @@ type Conf struct {
 }
 
 type DaItems struct {
-	Low_up   int
-	High_up  int
-	Close_up int
+	Total     int
+	Low_up    int
+	High_up   int
+	Close_up  int
+	All_well  int
+	Sz1_close float64 //大盘收盘1
+	Sz2_close float64 //大盘收盘2
 }
