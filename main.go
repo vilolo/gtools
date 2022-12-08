@@ -43,9 +43,9 @@ func init() {
 		fmt.Printf("Open mysql failed,err:%v\n", err)
 		return
 	}
-	DB.SetConnMaxLifetime(100 * time.Second) //最大连接周期，超过时间的连接就close
-	DB.SetMaxOpenConns(100)                  //设置最大连接数
-	DB.SetMaxIdleConns(16)                   //设置闲置连接数
+	DB.SetConnMaxLifetime(3 * time.Minute) //最大连接周期，超过时间的连接就close
+	DB.SetMaxOpenConns(100)                //设置最大连接数
+	DB.SetMaxIdleConns(16)                 //设置闲置连接数
 	dbClient = DB
 }
 
@@ -301,6 +301,9 @@ func saveList() {
 
 	for _, v := range qtData.Data.Diff {
 		// fmt.Println(k, v)
+		if strings.Contains(v.Name, "ST") {
+			continue
+		}
 		_, err := dbClient.Exec("insert into st(name,code,sector,inc_rate)values(?,?,?,?)", v.Name, v.Code, v.Sector, v.IncRate)
 		if err != nil {
 			fmt.Println("===", err)

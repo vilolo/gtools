@@ -17,8 +17,8 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-var kNum = 40
-var checkDays = 2 //控制后面验证的天数
+var kNum = 55
+var checkDays = 3 //控制后面验证的天数
 
 func init() {
 	db = utils.GetDB()
@@ -69,8 +69,9 @@ func analysis() {
 			}
 
 			//todo
-			checkP(kArr, new(p6), &r0)
-			checkP(kArr, new(p7), &r1)
+			// checkP(kArr, new(p0), &r0)
+			checkP(kArr, new(p7), &r0)
+			checkP(kArr, new(p8), &r1)
 		}
 	}
 
@@ -100,7 +101,7 @@ func analysis() {
 }
 
 func checkP(kArr []structs.K, p plan, r *[]structs.Res) {
-	for i := checkDays; i < len(kArr)-2; i++ {
+	for i := checkDays; i < len(kArr)-15; i++ {
 		ri := i - checkDays
 		if len(*r) <= ri {
 			*r = append(*r, structs.Res{kArr[i].Date, 0, 0, 0})
@@ -282,6 +283,38 @@ func (pp p7) p(kArr []structs.K, i int) bool {
 		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.3+kArr[i].Low) &&
 		kArr[i].Low >= kArr[i+1].Low &&
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.8+kArr[i].Low) {
+		return true
+	}
+	return false
+}
+
+type p8 struct{}
+
+func (pp p8) p(kArr []structs.K, i int) bool {
+	countDay := 15
+	max := float64(0)
+	min := float64(0)
+	for j := i; j < countDay+i; j++ {
+		if max == 0 {
+			max = kArr[j].High
+			min = kArr[j].Low
+		} else {
+			if kArr[j].High > max {
+				max = kArr[j].High
+			}
+			if kArr[j].Low < min {
+				min = kArr[j].Low
+			}
+		}
+	}
+	positionRate := (kArr[i].Close - min) / (max - min)
+
+	if kArr[i].Close > kArr[i].Open &&
+		((kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.05 + kArr[i].Low)) ||
+			(positionRate < 0.2 && ((kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.15 + kArr[i].Low)) || (kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.85 + kArr[i].Low)) || (kArr[i+1].Open <= ((kArr[i+1].High-kArr[i+1].Low)*0.15 + kArr[i+1].Low)) || (kArr[i].Close >= ((kArr[i+1].High-kArr[i+1].Low)*0.85 + kArr[i+1].Low)))) ||
+			((kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.80 + kArr[i].Low)) && (kArr[i+1].Close >= ((kArr[i+1].High-kArr[i+1].Low)*0.85 + kArr[i+1].Low)) && kArr[i].Low > kArr[i+1].Low) ||
+			(kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.95 + kArr[i].Low))) &&
+		positionRate < 0.3 {
 		return true
 	}
 	return false
