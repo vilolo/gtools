@@ -50,6 +50,8 @@ type Res struct {
 	FindNum int
 	UpNum   int
 	DownNum int
+	WinArr  []string
+	FailArr []string
 }
 
 type Conf struct {

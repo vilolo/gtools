@@ -3,6 +3,7 @@ package strategys
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -17,8 +18,9 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-var kNum = 55
+var kNum = 60
 var checkDays = 3 //控制后面验证的天数
+var countDay = 20 //统计范围内最高最低
 
 func init() {
 	db = utils.GetDB()
@@ -34,7 +36,7 @@ func analysis() {
 	st := new(structs.DbSt)
 	var stData structs.StData
 
-	rows, err := db.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0")
+	rows, err := db.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 and locate('退',name)=0")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
@@ -69,15 +71,18 @@ func analysis() {
 			}
 
 			//todo
-			// checkP(kArr, new(p0), &r0)
-			checkP(kArr, new(p7), &r0)
-			checkP(kArr, new(p8), &r1)
+			checkP(kArr, new(p7), &r0, st.Code)
+			checkP(kArr, new(p8), &r1, st.Code)
 		}
 	}
 
 	r0Avg := float64(0)
 	r1Avg := float64(0)
 	upRateAvg := float64(0)
+	r0TotalUp := 0
+	r0Total := 0
+	r1TotalUp := 0
+	r1Total := 0
 	for i := 0; i < len(r0); i++ {
 		fmt.Println(r0[i].Date)
 		ratio0, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(r0[i].UpNum)/float64(r0[i].FindNum)*100), 64)
@@ -89,23 +94,47 @@ func analysis() {
 		upRate, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", ratio1-ratio0), 64)
 		fmt.Println(upRate, "%")
 
-		r0Avg += ratio0
-		r1Avg += ratio1
+		// r0Avg += ratio0
+		// r1Avg += ratio1
+		r0TotalUp += r0[i].UpNum
+		r0Total += r0[i].FindNum
+		r1TotalUp += r1[i].UpNum
+		r1Total += r1[i].FindNum
+
+		// todo
+		// showDate := "2022-10-27"
+		// if r0[i].Date == showDate {
+		// 	fmt.Println(r1[i].WinArr)
+		// 	fmt.Println(r1[i].FailArr)
+		// }
 	}
 
-	r0Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r0Avg/float64(len(r0)))), 64)
-	r1Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r1Avg/float64(len(r1)))), 64)
+	// r0Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r0Avg/float64(len(r0)))), 64)
+	// r1Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (r1Avg/float64(len(r1)))), 64)
+	// upRateAvg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", r1Avg-r0Avg), 64)
+
+	r0Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (float64(r0TotalUp)/float64(r0Total))*100), 64)
+	r1Avg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", (float64(r1TotalUp)/float64(r1Total))*100), 64)
 	upRateAvg, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", r1Avg-r0Avg), 64)
 
-	fmt.Println("r0 avg：", r0Avg, "%, r1 avg：", r1Avg, "，", upRateAvg, "%")
+	fmt.Println("r0 avg：", r0Avg, "%, r1 avg：", r1Avg, "，", upRateAvg, "%", "r0-", r0TotalUp, "-", r0Total, "===", "r1-", r1TotalUp, "-", r1Total)
 }
 
-func checkP(kArr []structs.K, p plan, r *[]structs.Res) {
-	for i := checkDays; i < len(kArr)-15; i++ {
+func checkP(kArr []structs.K, p plan, r *[]structs.Res, code string) {
+	// if code == "002684" {
+	// 	fmt.Println(kArr)
+	// }
+	for i := checkDays; i < len(kArr)-int(math.Max(float64(checkDays), float64(countDay))); i++ { //countDay 要比 checkDays 大
 		ri := i - checkDays
 		if len(*r) <= ri {
-			*r = append(*r, structs.Res{kArr[i].Date, 0, 0, 0})
+			*r = append(*r, structs.Res{kArr[i].Date, 0, 0, 0, []string{}, []string{}})
+		} else {
+			if kArr[i].Date != (*r)[ri].Date {
+				continue
+			}
 		}
+		// fmt.Println(i)
+		// os.Exit(1)
 
 		if p.p(kArr, i) {
 			(*r)[ri].FindNum += 1
@@ -113,8 +142,14 @@ func checkP(kArr []structs.K, p plan, r *[]structs.Res) {
 			//后面checkDays验证
 			if checkWin2(kArr, i, checkDays, false) {
 				(*r)[ri].UpNum += 1
+				(*r)[ri].WinArr = append((*r)[ri].WinArr, code)
+
 			} else {
 				(*r)[ri].DownNum += 1
+				// if code == "603198" {
+				// 	fmt.Println(kArr[i])
+				// }
+				(*r)[ri].FailArr = append((*r)[ri].FailArr, code)
 			}
 		}
 	}
@@ -152,7 +187,7 @@ func checkWin2(kArr []structs.K, i int, checkDays int, isSuccessive bool) bool {
 	}
 
 	for j := i - 1; j >= i-checkDays; j-- {
-		if ((kArr[j].High - kArr[i].Close) / kArr[i].Close) > 0.01 {
+		if ((kArr[j].High - kArr[i].Close) / kArr[i].Close) > 0.02 {
 			return true
 		}
 	}
@@ -291,7 +326,6 @@ func (pp p7) p(kArr []structs.K, i int) bool {
 type p8 struct{}
 
 func (pp p8) p(kArr []structs.K, i int) bool {
-	countDay := 15
 	max := float64(0)
 	min := float64(0)
 	for j := i; j < countDay+i; j++ {
@@ -307,14 +341,12 @@ func (pp p8) p(kArr []structs.K, i int) bool {
 			}
 		}
 	}
-	positionRate := (kArr[i].Close - min) / (max - min)
+	positionRate := (kArr[i].Low - min) / (max - min)
 
 	if kArr[i].Close > kArr[i].Open &&
-		((kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.05 + kArr[i].Low)) ||
-			(positionRate < 0.2 && ((kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.15 + kArr[i].Low)) || (kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.85 + kArr[i].Low)) || (kArr[i+1].Open <= ((kArr[i+1].High-kArr[i+1].Low)*0.15 + kArr[i+1].Low)) || (kArr[i].Close >= ((kArr[i+1].High-kArr[i+1].Low)*0.85 + kArr[i+1].Low)))) ||
-			((kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.80 + kArr[i].Low)) && (kArr[i+1].Close >= ((kArr[i+1].High-kArr[i+1].Low)*0.85 + kArr[i+1].Low)) && kArr[i].Low > kArr[i+1].Low) ||
-			(kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.95 + kArr[i].Low))) &&
-		positionRate < 0.3 {
+		// kArr[i].Close > kArr[i+1].Close &&
+		kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.93+kArr[i].Low) &&
+		positionRate <= 0.24 {
 		return true
 	}
 	return false
