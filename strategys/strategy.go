@@ -72,7 +72,7 @@ func analysis() {
 
 			//todo
 			checkP(kArr, new(p7), &r0, st.Code)
-			checkP(kArr, new(p8), &r1, st.Code)
+			checkP(kArr, new(p21), &r1, st.Code)
 		}
 	}
 
@@ -317,7 +317,7 @@ func (pp p7) p(kArr []structs.K, i int) bool {
 		kArr[i].High > kArr[i+1].High &&
 		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.3+kArr[i].Low) &&
 		kArr[i].Low >= kArr[i+1].Low &&
-		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.8+kArr[i].Low) {
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) {
 		return true
 	}
 	return false
@@ -346,7 +346,38 @@ func (pp p8) p(kArr []structs.K, i int) bool {
 	if kArr[i].Close > kArr[i].Open &&
 		// kArr[i].Close > kArr[i+1].Close &&
 		kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.93+kArr[i].Low) &&
-		positionRate <= 0.24 {
+		positionRate <= 0.23 {
+		return true
+	}
+	return false
+}
+
+type p21 struct{}
+
+func (pp p21) p(kArr []structs.K, i int) bool {
+	max := float64(0)
+	min := float64(0)
+	for j := i; j < countDay+i; j++ {
+		if max == 0 {
+			max = kArr[j].High
+			min = kArr[j].Low
+		} else {
+			if kArr[j].High > max {
+				max = kArr[j].High
+			}
+			if kArr[j].Low < min {
+				min = kArr[j].Low
+			}
+		}
+	}
+	positionRate := (kArr[i].Low - min) / (max - min)
+
+	if kArr[i].Close > kArr[i].Open &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i].Close > kArr[i+1].Close &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.92+kArr[i].Low) &&
+		positionRate <= 0.45 {
 		return true
 	}
 	return false

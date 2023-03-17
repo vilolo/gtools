@@ -41,7 +41,7 @@ func GetDB() *sql.DB {
 		os.Exit(0)
 	}
 	DB.SetConnMaxLifetime(100 * time.Second) //最大连接周期，超过时间的连接就close
-	DB.SetMaxOpenConns(100)                  //设置最大连接数
-	DB.SetMaxIdleConns(16)                   //设置闲置连接数
+	DB.SetMaxOpenConns(1000)                 //设置最大连接数
+	DB.SetMaxIdleConns(100)                  //设置闲置连接数
 	return DB
 }
