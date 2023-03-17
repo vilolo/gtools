@@ -18,7 +18,7 @@ var db *sql.DB
 var pool []structs.QtInfo
 
 //todo
-var kNum = 60
+var kNum = 80
 var checkDays = 3 //控制后面验证的天数
 var countDay = 20 //统计范围内最高最低
 
@@ -71,8 +71,8 @@ func analysis() {
 			}
 
 			//todo
-			checkP(kArr, new(p7), &r0, st.Code)
-			checkP(kArr, new(p21), &r1, st.Code)
+			checkP(kArr, new(p22), &r0, st.Code)
+			checkP(kArr, new(p23), &r1, st.Code)
 		}
 	}
 
@@ -102,8 +102,10 @@ func analysis() {
 		r1Total += r1[i].FindNum
 
 		// todo
-		// showDate := "2022-10-27"
+		// showDate := "2023-03-13"
 		// if r0[i].Date == showDate {
+		// 	fmt.Println(r0[i].WinArr)
+		// 	fmt.Println(r0[i].FailArr)
 		// 	fmt.Println(r1[i].WinArr)
 		// 	fmt.Println(r1[i].FailArr)
 		// }
@@ -372,12 +374,80 @@ func (pp p21) p(kArr []structs.K, i int) bool {
 	}
 	positionRate := (kArr[i].Low - min) / (max - min)
 
+	// if kArr[i].Close > kArr[i].Open &&
+	// 	kArr[i].Close > kArr[i+1].Close &&
+	// 	kArr[i].High > kArr[i+1].High &&
+	// 	kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.3+kArr[i].Low) &&
+	// 	kArr[i].Low >= kArr[i+1].Low &&
+	// 	kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) {
+	// 	return true
+	// }
+
 	if kArr[i].Close > kArr[i].Open &&
 		kArr[i].Low > kArr[i+1].Low &&
 		kArr[i].Close > kArr[i+1].Close &&
 		kArr[i].High > kArr[i+1].High &&
-		kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.92+kArr[i].Low) &&
-		positionRate <= 0.45 {
+		kArr[i].Close >= ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) &&
+		positionRate <= 0.4 {
+		return true
+	}
+	return false
+}
+
+type p22 struct{} //p7修改
+
+func (pp p22) p(kArr []structs.K, i int) bool {
+	max := float64(0)
+	min := float64(0)
+	for j := i; j < countDay+i; j++ {
+		if max == 0 {
+			max = kArr[j].High
+			min = kArr[j].Low
+		} else {
+			if kArr[j].High > max {
+				max = kArr[j].High
+			}
+			if kArr[j].Low < min {
+				min = kArr[j].Low
+			}
+		}
+	}
+	// positionRate := (kArr[i].Low - min) / (max - min)
+
+	//红，短期低位，长期不是最低，基础收高，不破前低或收极高，（加强：下影线短回撤小，低点抬高，高点抬高,收点抬高）
+	//52.45 %
+	if kArr[i].Close > kArr[i].Open && //52.45 %
+
+		//加强
+		kArr[i].Close > kArr[i+1].Close && //52.45 %
+		kArr[i].High > kArr[i+1].High && //50.54 %
+		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) && //46.73 %
+		// kArr[i].Low >= kArr[i+1].Low && //52.3 %	52.45 %
+
+		// positionRate <= 0.4 && //51.74 %	52.45 %
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && //43.14 %
+		(kArr[i].Low >= kArr[i+1].Low ||
+			kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.95+kArr[i].Low)) && //52.29 %
+		1 == 1 {
+		return true
+	}
+	return false
+}
+
+type p23 struct{} //p1+p7修改
+
+func (pp p23) p(kArr []structs.K, i int) bool {
+	if kArr[i].IncRate > 0 && //52.61
+		kArr[i].Close > kArr[i].Open && //52.61
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && //43.56
+		kArr[i].High > kArr[i+1].High && //52.13
+		kArr[i+1].High > kArr[i+2].High && //52.32
+		kArr[i].Low > kArr[i+1].Low && //52.23
+		kArr[i+1].Low > kArr[i+2].Low && //52.79
+
+		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) && //49.13
+
+		1 == 1 {
 		return true
 	}
 	return false

@@ -117,7 +117,7 @@ var down = 0
 var kDate = ""
 
 func handleData() {
-	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 order by sector")
+	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 and locate('退市',name)=0 order by sector")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
@@ -327,11 +327,15 @@ func updateHistory() {
 	// _, err := dbClient.Exec("update st set data = null")
 	rows, err := dbClient.Query("select code, sector from st where updated_at is null or updated_at < ?", time.Now().Format("2006-01-02"))
 	// rows, err := dbClient.Query("select code from st limit 2")
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
+
+	//报错可能是超时：https://blog.csdn.net/xiangzaixiansheng/article/details/125558282
+	// defer func() {
+	// 	if rows != nil {
+	// 		rows.Close() //可以关闭掉未scan连接一直占用
+	// 	}
+	// }()
+	defer rows.Close()
+
 	endDate := time.Now().Format("20060102")
 	if err != nil {
 		fmt.Printf("Query failed,err:%v", err)
@@ -404,6 +408,10 @@ func strategy(kArr []structs.K, i int) bool {
 
 	if p == 7 {
 		return p7(kArr, i)
+	}
+
+	if p == 22 {
+		return p22(kArr, i)
 	}
 
 	return p1(kArr, i)
@@ -493,6 +501,26 @@ func p7(kArr []structs.K, i int) bool {
 	if kArr[i].Close > kArr[i].Open &&
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.6+kArr[i].Low) &&
 		kArr[i+1].Close > ((kArr[i+1].High-kArr[i+1].Low)*0.6+kArr[i+1].Low) {
+		return true
+	}
+	return false
+}
+
+func p22(kArr []structs.K, i int) bool {
+	pName = "p22"
+	if kArr[i].Close > kArr[i].Open && //52.45 %
+
+		//加强
+		kArr[i].Close > kArr[i+1].Close && //52.45 %
+		kArr[i].High > kArr[i+1].High && //50.54 %
+		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) && //46.73 %
+		// kArr[i].Low >= kArr[i+1].Low && //52.3 %	52.45 %
+
+		// positionRate <= 0.4 && //51.74 %	52.45 %
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && //43.14 %
+		(kArr[i].Low >= kArr[i+1].Low ||
+			kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.95+kArr[i].Low)) && //52.29 %
+		1 == 1 {
 		return true
 	}
 	return false
