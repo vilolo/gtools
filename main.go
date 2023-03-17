@@ -117,7 +117,7 @@ var down = 0
 var kDate = ""
 
 func handleData() {
-	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 and locate('退市',name)=0 order by sector")
+	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 and locate('退',name)=0 order by sector")
 	if err != nil {
 		fmt.Println("err1:", err)
 		return
