@@ -43,9 +43,9 @@ func init() {
 		fmt.Printf("Open mysql failed,err:%v\n", err)
 		return
 	}
-	DB.SetConnMaxLifetime(3 * time.Minute) //最大连接周期，超过时间的连接就close
-	DB.SetMaxOpenConns(100)                //设置最大连接数
-	DB.SetMaxIdleConns(16)                 //设置闲置连接数
+	DB.SetConnMaxLifetime(100 * time.Minute) //最大连接周期，超过时间的连接就close
+	DB.SetMaxOpenConns(1000)                 //设置最大连接数
+	DB.SetMaxIdleConns(100)                  //设置闲置连接数
 	dbClient = DB
 }
 
@@ -71,6 +71,9 @@ func main() {
 
 		// 处理结果
 		handlePool()
+	} else if *t == "list" {
+		//重新获取列表
+		saveList()
 	} else {
 		fmt.Println("type ERR !!!")
 	}
@@ -90,13 +93,13 @@ func handlePool() {
 		<div class="info"></div>
 		<div class="box">
 		</div>
-	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+	<script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
 	<script>
 		var html = ""
 		data = %s
 		$(".info").html(data.length)
 		data.forEach((element,i) => {
-			html += "<span><span>"+(i+1)+"//"+element.f12+"//"+element.f14+"//"+element.f100+"//"+element.f3+"%%</span><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
+			html += "<span><span>"+(i+1)+"// "+element.f12+" //"+element.f14+"//"+element.f100+"//"+element.f3+"%%</span><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
 		});
 		$(".box").html(html)
 	</script>
@@ -393,6 +396,7 @@ var checkI = 1
 var checkDay = 1
 var pName = "no"
 
+//todo
 func strategy(kArr []structs.K, i int) bool {
 	if p == 1 {
 		return p1(kArr, i)
@@ -412,6 +416,14 @@ func strategy(kArr []structs.K, i int) bool {
 
 	if p == 22 {
 		return p22(kArr, i)
+	}
+
+	if p == 100 {
+		return p100(kArr, i)
+	}
+
+	if p == 101 {
+		return p101(kArr, i)
 	}
 
 	return p1(kArr, i)
@@ -520,6 +532,56 @@ func p22(kArr []structs.K, i int) bool {
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && //43.14 %
 		(kArr[i].Low >= kArr[i+1].Low ||
 			kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.95+kArr[i].Low)) && //52.29 %
+		1 == 1 {
+		return true
+	}
+	return false
+}
+
+func p100(kArr []structs.K, i int) bool {
+	pName = "check"
+	if 1 == 1 &&
+		kArr[i].IncRate > 1.5 &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
+		1 == 1 {
+		return true
+	}
+	return false
+}
+
+func p101(kArr []structs.K, i int) bool {
+	pName = "101"
+	max := float64(0)
+	min := float64(0)
+	for j := i; j < 5+i; j++ {
+		if max == 0 {
+			max = kArr[j].High
+			min = kArr[j].Low
+		} else {
+			if kArr[j].High > max {
+				max = kArr[j].High
+			}
+			if kArr[j].Low < min {
+				min = kArr[j].Low
+			}
+		}
+	}
+	positionRate := (kArr[i].Low - min) / (max - min)
+
+	if 1 == 1 &&
+		//1k:red,up,over-75,open-l
+		kArr[i].IncRate > 0 &&
+		kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) &&
+		//3k:c-up,h-up,l-up,
+		kArr[i].Close > kArr[i+1].Close &&
+		kArr[i+1].Close > kArr[i+2].Close &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i+1].High > kArr[i+2].High &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i+1].Low > kArr[i+2].Low &&
+		//10k:l-less-30
+		positionRate < 0.45 &&
 		1 == 1 {
 		return true
 	}

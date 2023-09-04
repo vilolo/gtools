@@ -71,7 +71,7 @@ func analysis() {
 			}
 
 			//todo
-			checkP(kArr, new(p22), &r0, st.Code)
+			checkP(kArr, new(p101), &r0, st.Code)
 			checkP(kArr, new(p23), &r1, st.Code)
 		}
 	}
@@ -447,6 +447,56 @@ func (pp p23) p(kArr []structs.K, i int) bool {
 
 		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) && //49.13
 
+		1 == 1 {
+		return true
+	}
+	return false
+}
+
+type p100 struct{} //倒查
+func (pp p100) p(kArr []structs.K, i int) bool {
+	if 1 == 1 &&
+		kArr[i].IncRate > 1.5 &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
+		1 == 1 {
+		return true
+	}
+	return false
+}
+
+type p101 struct{} //0904整理
+func (pp p101) p(kArr []structs.K, i int) bool {
+	max := float64(0)
+	min := float64(0)
+	for j := i; j < countDay+i; j++ {
+		if max == 0 {
+			max = kArr[j].High
+			min = kArr[j].Low
+		} else {
+			if kArr[j].High > max {
+				max = kArr[j].High
+			}
+			if kArr[j].Low < min {
+				min = kArr[j].Low
+			}
+		}
+	}
+	positionRate := (kArr[i].Low - min) / (max - min)
+
+	if 1 == 1 &&
+		//1k:red,up,over-75,open-l
+		kArr[i].IncRate > 0 &&
+		kArr[i].Close > kArr[i].Open &&
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) &&
+		//3k:c-up,h-up,l-up,
+		kArr[i].Close > kArr[i+1].Close &&
+		kArr[i+1].Close > kArr[i+2].Close &&
+		kArr[i].High > kArr[i+1].High &&
+		kArr[i+1].High > kArr[i+2].High &&
+		kArr[i].Low > kArr[i+1].Low &&
+		kArr[i+1].Low > kArr[i+2].Low &&
+		//10k:l-less-30
+		positionRate < 0.45 &&
 		1 == 1 {
 		return true
 	}
