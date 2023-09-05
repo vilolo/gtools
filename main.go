@@ -99,7 +99,8 @@ func handlePool() {
 		data = %s
 		$(".info").html(data.length)
 		data.forEach((element,i) => {
-			html += "<span><span>"+(i+1)+"// "+element.f12+" //"+element.f14+"//"+element.f100+"//"+element.f3+"%%</span><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+(element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12))+".gif\"><br>"
+			var code = element.f12[0]==6 ? ("sh"+element.f12) : ("sz"+element.f12);
+			html += "<span><span>+++"+(i+1)+"// "+element.f12+" //"+element.f14+"//"+element.f100+"//"+element.f3+"%%</span><br><hr><br>"+"<img src=\"https://image.sinajs.cn/newchart/daily/n/"+code+".gif\"><img src=\"https://image.sinajs.cn/newchart/weekly/n/"+code+".gif\"><img src=\"https://image.sinajs.cn/newchart/monthly/n/"+code+".gif\"><br><br>"
 		});
 		$(".box").html(html)
 	</script>
@@ -119,6 +120,8 @@ var up = 0
 var down = 0
 var kDate = ""
 
+const KNum int = 20 //使用到的k线数量
+
 func handleData() {
 	rows, err := dbClient.Query("select code,name,data,sector,inc_rate from st where locate('ST',name)=0 and locate('退',name)=0 order by sector")
 	if err != nil {
@@ -135,7 +138,8 @@ func handleData() {
 	//策略验证开始index
 	curI := checkI
 	checkDay := checkDay
-	var kArr [10]structs.K
+
+	var kArr [KNum + 10]structs.K
 	for rows.Next() {
 		err = rows.Scan(&st.Code, &st.Name, &st.Data, &st.Sector, &st.IncRate)
 		if err != nil {
@@ -148,8 +152,8 @@ func handleData() {
 		var stData structs.StData
 		json.Unmarshal([]byte(jsonStr), &stData)
 
-		if len(stData.Hq) > 10 {
-			for i := 0; i < 10; i++ {
+		if len(stData.Hq) > KNum {
+			for i := 0; i < KNum; i++ {
 				k := new(structs.K)
 				createK(stData.Hq[i], k)
 				kArr[i] = *k
@@ -553,7 +557,7 @@ func p101(kArr []structs.K, i int) bool {
 	pName = "101"
 	max := float64(0)
 	min := float64(0)
-	for j := i; j < 5+i; j++ {
+	for j := i; j < KNum+i; j++ {
 		if max == 0 {
 			max = kArr[j].High
 			min = kArr[j].Low
