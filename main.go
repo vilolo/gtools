@@ -422,6 +422,10 @@ func strategy(kArr []structs.K, i int) bool {
 		return p22(kArr, i)
 	}
 
+	if p == 23 {
+		return p23(kArr, i)
+	}
+
 	if p == 100 {
 		return p100(kArr, i)
 	}
@@ -542,8 +546,26 @@ func p22(kArr []structs.K, i int) bool {
 	return false
 }
 
+func p23(kArr []structs.K, i int) bool {
+	pName = "p23"
+	if kArr[i].IncRate > 0 && //52.61
+		kArr[i].Close > kArr[i].Open && //52.61
+		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.9+kArr[i].Low) && //43.56
+		kArr[i].High > kArr[i+1].High && //52.13
+		kArr[i+1].High > kArr[i+2].High && //52.32
+		kArr[i].Low > kArr[i+1].Low && //52.23
+		kArr[i+1].Low > kArr[i+2].Low && //52.79
+
+		kArr[i].Open <= ((kArr[i].High-kArr[i].Low)*0.2+kArr[i].Low) && //49.13
+
+		1 == 1 {
+		return true
+	}
+	return false
+}
+
 func p100(kArr []structs.K, i int) bool {
-	pName = "check"
+	pName = "check100"
 	if 1 == 1 &&
 		kArr[i].IncRate > 1.5 &&
 		kArr[i].Close > ((kArr[i].High-kArr[i].Low)*0.7+kArr[i].Low) &&
